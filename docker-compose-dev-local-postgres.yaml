@@ -1,0 +1,38 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgis/postgis
+    restart: always
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - .db/postgresql/data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ 'CMD-SHELL', 'pg_isready -U postgres' ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - 5432:5432
+    expose:
+      - 5432
+  backend:
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    build:
+      context: .
+    ports:
+      - 8080:8080
+    volumes:
+      - .:/app
+    command: CompileDaemon --build="go build main.go" --command=./main
+    environment:
+      - POSTGRES_NAME=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    expose:
+      - 8000
